@@ -20,12 +20,22 @@
  ******************************************************************************************/
 #include "MainWindow.h"
 #include "Game.h"
+#include <random>
 
 Game::Game( MainWindow& wnd )
 	:
 	wnd( wnd ),
 	gfx( wnd )
 {
+	std::mt19937 rng(std::random_device{}());
+	std::uniform_int_distribution<int> xDist(0, Graphics::ScreenWidth - 1);
+	std::uniform_int_distribution<int> yDist(0, Graphics::ScreenHeight - 1);
+
+	for (int i = 0; i < nP; i++)
+	{
+		painters[i] = Vec2(float(xDist(rng)), (float)yDist(rng));
+		vel[i] = Vec2(float(pow(-1, rand() % 2)), float(pow(-1, rand() % 2))) * 2.5f;
+	}
 }
 
 void Game::Go()
@@ -38,8 +48,66 @@ void Game::Go()
 
 void Game::UpdateModel()
 {
+	for (int k = 0; k < nP; k++)
+	{
+		painters[k] += vel[k];
+	}
+	PainterClamp();
+}
+
+void Game::PainterClamp()
+{
+	for (int k = 0; k < nP; k++)
+	{
+		if (painters[k].x >= Graphics::ScreenWidth)
+		{
+			painters[k].x = Graphics::ScreenWidth;
+			vel[k].x *= -1.0f;
+		}
+		if (painters[k].x < 0)
+		{
+			painters[k].x = 0;
+			vel[k].x *= -1.0f;
+		}
+
+		if (painters[k].y >= Graphics::ScreenHeight)
+		{
+			painters[k].y = Graphics::ScreenHeight;
+			vel[k].y *= -1.0f;
+		}
+		if (painters[k].y < 0)
+		{
+			painters[k].y = 0;
+			vel[k].y *= -1.0f;
+		}
+	}
 }
 
 void Game::ComposeFrame()
 {
+	for (int j = 0; j < Graphics::ScreenHeight; j++)
+	{
+		for (int i = 0; i < Graphics::ScreenWidth; i++)
+		{
+			float sum = 0.0f;
+			for (int k = 0; k < nP; k++)
+			{
+				const float distSq = Vec2(float(i) - painters[k].x, float(j) - painters[k].y).GetLengthSq();
+				if (distSq <= 90000.0f)
+				{
+					sum += 255.0f * float(pow(2.7182819, -distSq/6000.0f));
+				}
+			}
+			sum = capping(255.0f, sum);
+
+			if (sum < 128.0f)
+			{
+				gfx.PutPixel(i, j, 255 - 2 * char(sum), 1 * char(sum), char(sum/2));
+			}
+			else
+			{
+				gfx.PutPixel(i, j, char(sum/2), 255 - 2 * char(sum - 128), 1 * char(sum - 128));
+			}
+		}
+	}
 }

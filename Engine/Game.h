@@ -36,11 +36,19 @@ private:
 	void UpdateModel();
 	/********************************/
 	/*  User Functions              */
+	void PainterClamp();
+	float capping(float max, float v)
+	{
+		return v >= max ? max : v;
+	}
 	/********************************/
 private:
 	MainWindow& wnd;
 	Graphics gfx;
 	/********************************/
 	/*  User Variables              */
+	static constexpr int nP = 9;
+	Vec2 painters[nP];
+	Vec2 vel[nP];
 	/********************************/
 };
